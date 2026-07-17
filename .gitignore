@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Airflow
+airflow/logs/
+airflow/airflow.db
+airflow/airflow.cfg
+airflow/unittests.cfg
+
+# dbt
+dbt/taxi_dbt/target/
+dbt/taxi_dbt/dbt_packages/
+dbt/taxi_dbt/logs/
+
+# Data (never commit raw/processed data or credentials)
+data/
+*.parquet
+*.csv
+!dbt/**/seeds/*.csv
+
+# Env / secrets
+.env
+*.pem
+
+# OS
+.DS_Store
