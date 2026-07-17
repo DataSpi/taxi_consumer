@@ -1,0 +1,16 @@
+version: 2
+
+sources:
+  - name: raw
+    database: TAXI_DB
+    schema: RAW
+    tables:
+      - name: trips
+        description: >
+          Spark-cleaned NYC Yellow Taxi trips, appended one month at a time by the
+          Airflow load_to_snowflake task. Grain: one row per trip.
+        loaded_at_field: PICKUP_DATETIME
+        freshness:
+          warn_after: { count: 45, period: day }
+      - name: zone_lookup
+        description: Static TLC taxi zone dimension (LocationID -> Borough/Zone/service_zone), loaded once.

@@ -1,5 +1,8 @@
 # Project: NYC Taxi Analytics Engineering Platform
 
+## Status (as of 2026-07-17)
+Weeks 1-2 done and verified end-to-end through Airflow itself (not just manual runs): `taxi_pipeline` DAG backfills Jan-Dec 2024, each run does `extract_month` + `extract_zone_lookup` -> `spark_clean_month`. Confirmed working: MinIO `raw/` has all 12 months + zone lookup; MinIO `processed/trips/year=2024/month=0{1,2}/` has cleaned/enriched Parquet (spot-checked Jan: 2,723,750 rows after cleaning; Feb: verified via Airflow-triggered run, 11 output files). Data scope confirmed as full calendar year **2024** (not just "most recent year" — locked in during Week 1 build). Next up: Week 3 (Snowflake + dbt).
+
 ## Purpose
 Portfolio project built to close 4 skill gaps for Analytics Engineering job applications: **Airflow, Docker, Apache Spark/PySpark, Snowflake**. dbt and GitHub Actions CI/CD are already strong (see the user's other project at `/Users/spinokiem/Documents/wrk/DataSpi` for reference patterns: medallion architecture, staging/mart layering, schema+custom tests).
 
@@ -42,10 +45,18 @@ taxi_consumer/
 - Aggregate: `fct_trips_daily_summary` for dashboard performance
 
 ## Roadmap (full-time, ~3-4 weeks, must fit inside the 30-day Snowflake trial)
-1. **Week 1** — Docker Compose (Airflow + Postgres + MinIO) up; extract DAG lands raw month in MinIO. No Snowflake needed yet.
-2. **Week 2** — PySpark clean/enrich job wired into Airflow; partitioned processed output in MinIO.
-3. **Week 3** — Snowflake account setup, internal-stage load task, full dbt project (sources/staging/intermediate/marts/tests/docs), Cosmos integration, backfill all 12 months end-to-end.
+1. **Week 1 (done)** — Docker Compose (Airflow + Postgres + MinIO) up; extract DAG lands raw month in MinIO. No Snowflake needed yet.
+2. **Week 2 (done)** — PySpark clean/enrich job wired into Airflow; partitioned processed output in MinIO.
+3. **Week 3 (next)** — Snowflake account setup, internal-stage load task, full dbt project (sources/staging/intermediate/marts/tests/docs), Cosmos integration, backfill all 12 months end-to-end.
 4. **Week 4** — Streamlit dashboard, README + architecture diagram, case study writeup, GitHub Actions CI, capture all demo evidence before the Snowflake trial expires.
+
+## Gotchas already hit and fixed (avoid re-debugging these)
+- **Airflow `end_date` is inclusive of `data_interval_start`.** Setting `end_date=2025-01-01` with `@monthly`/`catchup=True` still schedules a Jan-2025 run. Use the last day of the desired month instead (`end_date=pendulum.datetime(2024, 12, 31, ...)`) to get exactly 12 runs.
+- **`AIRFLOW_CONN_MINIO_DEFAULT` must exist before containers start**, or `S3Hook` silently gets a blank connection (compose prints "variable is not set" but doesn't fail). Requires `cp .env.example .env` before `docker compose up`; changing `.env` requires `--force-recreate` (or `up -d --build`) on the airflow containers, not just a restart, since env vars are baked in at container creation.
+- **Spark reads TLC parquet timestamps as `TIMESTAMP_NTZ`**, which cannot be `.cast("long")` directly in Spark 3.5 (`AnalysisException: DATATYPE_MISMATCH.CAST_WITHOUT_SUGGESTION`). Use `F.unix_timestamp(col)` instead of `col.cast("long")` for epoch-seconds math.
+- **Airflow image needs `default-jdk-headless` + `procps`** (not a hardcoded `openjdk-*-arm64`/`amd64` path) for PySpark to run — `default-jdk-headless` gives a stable `/usr/lib/jvm/default-java` symlink across CPU architectures (dev machine is Apple Silicon/arm64); `procps` avoids a `ps: command not found` warning from Spark's launch scripts.
+- **hadoop-aws / aws-java-sdk-bundle versions must match the Hadoop client bundled inside pip's pyspark** — pinned `pyspark==3.5.3` pairs with `org.apache.hadoop:hadoop-aws:3.3.4` + `com.amazonaws:aws-java-sdk-bundle:1.12.262`, pulled via spark-submit `--packages` (not baked into the image) so they're easy to bump.
+- Docker CLI wasn't on PATH earlier in the project (Docker Desktop not yet installed); once installed, `docker`/`docker compose` became usable directly from the assistant's Bash tool on this machine (same daemon as the user's Docker Desktop).
 
 ## Definition of done
 - `docker compose up` from a clean clone stands up the whole stack.

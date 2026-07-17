@@ -1,0 +1,24 @@
+name: "taxi_dbt"
+version: "1.0.0"
+config-version: 2
+
+profile: "taxi_dbt"
+
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+seed-paths: ["seeds"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  taxi_dbt:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table
+      fct_trips:
+        +materialized: incremental

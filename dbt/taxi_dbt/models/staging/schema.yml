@@ -1,0 +1,23 @@
+version: 2
+
+models:
+  - name: stg_trips
+    description: One row per taxi trip, renamed/cast from raw.trips.
+    columns:
+      - name: pickup_location_id
+        tests:
+          - not_null
+      - name: dropoff_location_id
+        tests:
+          - not_null
+      - name: pickup_datetime
+        tests:
+          - not_null
+
+  - name: stg_zones
+    description: One row per TLC taxi zone.
+    columns:
+      - name: location_id
+        tests:
+          - unique
+          - not_null

@@ -1,0 +1,50 @@
+version: 2
+
+models:
+  - name: dim_zone
+    description: One row per TLC taxi zone.
+    columns:
+      - name: location_id
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_date
+    description: Date spine covering the project's 2024 data scope.
+    columns:
+      - name: date_day
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_trips
+    description: One row per taxi trip (incremental, appended by month).
+    columns:
+      - name: pickup_location_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_zone')
+                field: location_id
+      - name: dropoff_location_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_zone')
+                field: location_id
+      - name: pickup_date
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_day
+
+  - name: fct_trips_daily_summary
+    description: Trip counts/revenue aggregated by pickup date + zone, for the dashboard.
+    columns:
+      - name: pickup_date
+        tests:
+          - not_null
