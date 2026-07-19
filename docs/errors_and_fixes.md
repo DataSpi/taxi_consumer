@@ -188,6 +188,18 @@ in `fct_trips`'s `relationships` test — even though `dim_zone` was a real mode
 
 ---
 
+## 14. A few real TLC rows have pickup dates outside the file's own month
+
+**Symptom:** After fixing #13, `fct_trips.test` still failed the `relationships` test to `dim_date` — but this time only a handful of rows, not the whole table. Querying the actual min/max showed a pickup_datetime of `2002-12-31` sitting inside the "January 2024" trip file.
+
+**Root cause:** This isn't a pipeline bug at all — it's a genuine, documented quirk of the NYC TLC dataset itself. Taxi meters occasionally record a wrong date (data-entry/hardware error at the source), so a small number of rows in any given month's file have a `pickup_datetime` that doesn't actually fall in that month. `dim_date`'s spine only covers the project's declared 2024 scope, so those stray rows have nowhere to join to.
+
+**Fix:** Added a filter to `clean_trips.py`: keep only rows where `year(pickup_datetime)` and `month(pickup_datetime)` match the year/month the Spark job was invoked for (which Airflow already passes in as `--year`/`--month`). This is the standard, expected cleaning step for this dataset, not an arbitrary cutoff invented to make the test pass.
+
+`spark_jobs/clean_trips.py`
+
+---
+
 ## Pattern across most of these
 
 Almost every real bug here came from the same shape of problem: **something is safe the first time but not the Nth time** (reruns, retries, backfills, concurrent tasks) — idempotency and concurrency, not one-shot "happy path" logic. That's a fair reflection of what production data engineering debugging actually looks like, and worth internalizing as the recurring lesson, not just each individual fix.

@@ -1,0 +1,32 @@
+[0m00:02:52.631002 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x106c43d10>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x11871aae0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x11871a540>]}
+
+
+============================== 00:02:52.634832 | 789a3e11-205c-42d5-b0a8-b7e64819a542 ==============================
+[0m00:02:52.634832 [info ] [MainThread]: Running with dbt=1.11.11
+[0m00:02:52.635241 [debug] [MainThread]: running dbt with arguments {'fail_fast': 'False', 'version_check': 'True', 'write_json': 'True', 'indirect_selection': 'eager', 'log_cache_events': 'False', 'partial_parse': 'True', 'invocation_command': 'dbt docs generate', 'warn_error': 'None', 'send_anonymous_usage_stats': 'True', 'target_path': 'None', 'empty': 'None', 'debug': 'False', 'log_format': 'default', 'use_colors': 'True', 'printer_width': '80', 'cache_selected_only': 'False', 'no_print': 'None', 'profiles_dir': '/Users/spinokiem/.dbt', 'quiet': 'False', 'introspect': 'True', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])', 'static_parser': 'True', 'log_path': 'logs', 'use_experimental_parser': 'False'}
+[0m00:02:52.635684 [error] [MainThread]: Encountered an error:
+Runtime Error
+  No dbt_project.yml found at expected path /Users/spinokiem/Documents/wrk/taxi_consumer/dbt/dbt_project.yml
+  Verify that each entry within packages.yml (and their transitive dependencies) contains a file named dbt_project.yml
+  
+[0m00:02:52.653416 [debug] [MainThread]: Resource report: {"command_name": "generate", "command_success": false, "command_wall_clock_time": 0.07748946, "process_in_blocks": "0", "process_kernel_time": 0.292005, "process_mem_max_rss": "111738880", "process_out_blocks": "0", "process_user_time": 1.035989}
+[0m00:02:52.653986 [debug] [MainThread]: Command `dbt docs generate` failed at 00:02:52.653912 after 0.08 seconds
+[0m00:02:52.654260 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1036f7050>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x11850fcb0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1183b87a0>]}
+[0m00:02:52.654523 [debug] [MainThread]: Flushing usage events
+[0m00:02:53.858722 [debug] [MainThread]: An error was encountered while trying to flush usage events
+[0m00:06:35.580356 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1104b35d0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1103ee790>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x110593dd0>]}
+
+
+============================== 00:06:35.585069 | 5dbe61ba-2064-49f4-af6b-0a6f50006426 ==============================
+[0m00:06:35.585069 [info ] [MainThread]: Running with dbt=1.12.0
+[0m00:06:35.585582 [debug] [MainThread]: running dbt with arguments {'partial_parse': 'True', 'cache_selected_only': 'False', 'printer_width': '80', 'introspect': 'True', 'debug': 'False', 'use_experimental_parser': 'False', 'target_path': 'None', 'hints_enabled': 'True', 'quiet': 'False', 'write_json': 'True', 'warn_error': 'None', 'log_format': 'default', 'indirect_selection': 'eager', 'maximum_seed_size_mib': '1', 'profiles_dir': '/Users/spinokiem/.dbt', 'version_check': 'True', 'invocation_command': 'dbt docs generate', 'use_colors': 'True', 'fail_fast': 'False', 'empty': 'None', 'log_cache_events': 'False', 'static_parser': 'True', 'log_path': 'logs', 'no_print': 'None', 'send_anonymous_usage_stats': 'True', 'warn_error_options': 'WarnErrorOptionsV2(error=[], warn=[], silence=[])'}
+[0m00:06:35.586100 [error] [MainThread]: [[31mERROR[0m]: Encountered an error:
+Runtime Error
+  No dbt_project.yml found at expected path /Users/spinokiem/Documents/wrk/taxi_consumer/dbt/dbt_project.yml
+  Verify that each entry within packages.yml (and their transitive dependencies) contains a file named dbt_project.yml
+  
+[0m00:06:35.613384 [debug] [MainThread]: Resource report: {"command_name": "generate", "command_success": false, "command_wall_clock_time": 0.097136, "process_in_blocks": "0", "process_kernel_time": 0.185762, "process_mem_max_rss": "120061952", "process_out_blocks": "0", "process_user_time": 0.935371}
+[0m00:06:35.615052 [debug] [MainThread]: Command `dbt docs generate` failed at 00:06:35.614669 after 0.10 seconds
+[0m00:06:35.616162 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1105b7a50>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1105b7490>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1104bfe90>]}
+[0m00:06:35.617673 [debug] [MainThread]: Flushing usage events
+[0m00:06:36.709345 [debug] [MainThread]: An error was encountered while trying to flush usage events
