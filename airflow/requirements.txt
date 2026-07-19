@@ -2,3 +2,11 @@ apache-airflow-providers-amazon>=8.0.0,<9.0.0
 apache-airflow-providers-snowflake>=5.0.0,<6.0.0
 requests>=2.31.0
 pyspark==3.5.3
+
+# NOT astronomer-cosmos[dbt-snowflake] here: pulling dbt-core's dependency tree
+# into the same environment as apache-airflow causes an unresolvable pip
+# backtracking loop (ResolutionTooDeep) -- confirmed by actually trying it.
+# Cosmos's virtualenv execution mode installs dbt-snowflake into an isolated
+# venv at task runtime instead, so the plain package (no extra) is enough here.
+astronomer-cosmos>=1.5.0,<2.0.0
+virtualenv>=20.0.0

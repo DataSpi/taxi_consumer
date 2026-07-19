@@ -48,6 +48,27 @@ CREATE TABLE IF NOT EXISTS TAXI_DB.RAW.TRIPS (
   DROPOFF_BOROUGH         VARCHAR,
   DROPOFF_ZONE            VARCHAR
 );
+-- Spark also attaches PICKUP_BOROUGH/PICKUP_ZONE/DROPOFF_BOROUGH/DROPOFF_ZONE
+-- (Week 2 enrichment). dbt's staging/marts layer intentionally ignores these
+-- in favor of its own dim_zone join off ZONE_LOOKUP below -- see CLAUDE.md
+-- for why (real dimensional modeling + relationships tests, not a pass-through).
+
+CREATE FILE FORMAT IF NOT EXISTS TAXI_DB.RAW.CSV_FORMAT
+  TYPE = CSV
+  SKIP_HEADER = 1
+  FIELD_OPTIONALLY_ENCLOSED_BY = '"';
+
+CREATE STAGE IF NOT EXISTS TAXI_DB.RAW.ZONE_LOOKUP_STAGE
+  FILE_FORMAT = TAXI_DB.RAW.CSV_FORMAT;
+
+-- Column order must match taxi_zone_lookup.csv (LocationID,Borough,Zone,service_zone) --
+-- COPY INTO for CSV is positional, unlike the MATCH_BY_COLUMN_NAME used for Parquet above.
+CREATE TABLE IF NOT EXISTS TAXI_DB.RAW.ZONE_LOOKUP (
+  LOCATIONID    NUMBER,
+  BOROUGH       VARCHAR,
+  ZONE          VARCHAR,
+  SERVICE_ZONE  VARCHAR
+);
 
 -- Sanity check after running:
 -- SHOW WAREHOUSES LIKE 'TAXI_WH';
