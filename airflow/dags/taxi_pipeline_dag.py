@@ -48,7 +48,7 @@ profile_config = ProfileConfig(
     target_name="dev",
     profile_mapping=SnowflakeUserPasswordProfileMapping(
         conn_id=SNOWFLAKE_CONN_ID,
-        profile_args={"database": "TAXI_DB", "schema": "ANALYTICS"},
+        profile_args={"database": "TAXI_CONSUMERS", "schema": "ANALYTICS"},
     ),
 )
 
@@ -154,7 +154,7 @@ def taxi_pipeline():
         MATCH_BY_COLUMN_NAME (there's no column-name metadata in a CSV file).
         """
         hook = SnowflakeHook(snowflake_conn_id=SNOWFLAKE_CONN_ID)
-        (count,) = hook.get_first("SELECT COUNT(*) FROM TAXI_DB.RAW.ZONE_LOOKUP")
+        (count,) = hook.get_first("SELECT COUNT(*) FROM TAXI_CONSUMERS.RAW.ZONE_LOOKUP")
         if count > 0:
             return f"skipped, {count} rows already present"
 
@@ -167,13 +167,13 @@ def taxi_pipeline():
             cursor = conn.cursor()
             try:
                 cursor.execute(
-                    f"PUT file://{local_path} @TAXI_DB.RAW.ZONE_LOOKUP_STAGE OVERWRITE=TRUE"
+                    f"PUT file://{local_path} @TAXI_CONSUMERS.RAW.ZONE_LOOKUP_STAGE OVERWRITE=TRUE"
                 )
                 cursor.execute(
                     """
-                    COPY INTO TAXI_DB.RAW.ZONE_LOOKUP
-                    FROM @TAXI_DB.RAW.ZONE_LOOKUP_STAGE
-                    FILE_FORMAT = (FORMAT_NAME = TAXI_DB.RAW.CSV_FORMAT)
+                    COPY INTO TAXI_CONSUMERS.RAW.ZONE_LOOKUP
+                    FROM @TAXI_CONSUMERS.RAW.ZONE_LOOKUP_STAGE
+                    FILE_FORMAT = (FORMAT_NAME = TAXI_CONSUMERS.RAW.CSV_FORMAT)
                     PURGE = TRUE
                     """
                 )
@@ -206,13 +206,22 @@ def taxi_pipeline():
             conn = hook.get_conn()
             cursor = conn.cursor()
             try:
-                stage_path = f"@TAXI_DB.RAW.TRIPS_STAGE/year={year}/month={month:02d}/"
+                # Idempotency: PUT ... OVERWRITE=TRUE re-uploads the file with
+                # a new checksum each run, so Snowflake's COPY INTO load-history
+                # dedup doesn't recognize a rerun as "already loaded" and would
+                # silently double the month's rows. Delete this partition first
+                # so reruns (retries, backf-replay, manual clear) are safe.
+                cursor.execute(
+                    "DELETE FROM TAXI_CONSUMERS.RAW.TRIPS WHERE PICKUP_YEAR = %s AND PICKUP_MONTH = %s",
+                    (year, month),
+                )
+                stage_path = f"@TAXI_CONSUMERS.RAW.TRIPS_STAGE/year={year}/month={month:02d}/"
                 cursor.execute(f"PUT file://{tmpdir}/*.parquet {stage_path} AUTO_COMPRESS=FALSE OVERWRITE=TRUE")
                 cursor.execute(
                     f"""
-                    COPY INTO TAXI_DB.RAW.TRIPS
+                    COPY INTO TAXI_CONSUMERS.RAW.TRIPS
                     FROM {stage_path}
-                    FILE_FORMAT = (FORMAT_NAME = TAXI_DB.RAW.PARQUET_FORMAT)
+                    FILE_FORMAT = (FORMAT_NAME = TAXI_CONSUMERS.RAW.PARQUET_FORMAT)
                     MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE
                     PURGE = TRUE
                     """
@@ -220,7 +229,7 @@ def taxi_pipeline():
             finally:
                 cursor.close()
                 conn.close()
-        return f"loaded TAXI_DB.RAW.TRIPS year={year} month={month:02d}"
+        return f"loaded TAXI_CONSUMERS.RAW.TRIPS year={year} month={month:02d}"
 
     dbt_build = DbtTaskGroup(
         group_id="dbt_build",
@@ -231,7 +240,13 @@ def taxi_pipeline():
         # out to a local `dbt ls` at DAG-parse time -- there is no dbt
         # executable in this environment (see execution_config above).
         render_config=RenderConfig(load_method=LoadMode.CUSTOM),
-        operator_args={"py_requirements": ["dbt-snowflake==1.8.4"]},
+        operator_args={
+            "py_requirements": ["dbt-snowflake==1.8.4"],
+            # All dbt tasks share one virtualenv dir; running them concurrently
+            # races on the first `pip install` into it (confirmed by hitting
+            # it). This pool caps concurrency to 1 so they queue instead.
+            "pool": "dbt_pool",
+        },
     )
 
     raw_key = extract_month()

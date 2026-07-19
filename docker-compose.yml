@@ -78,6 +78,7 @@ services:
           --password "${_AIRFLOW_WWW_USER_PASSWORD:-admin}" \
           --firstname Admin --lastname User --role Admin \
           --email admin@example.com || true
+        airflow pools set dbt_pool 1 "Serializes Cosmos dbt tasks -- they share one virtualenv dir; concurrent pip installs into it race and corrupt the install."
 
   airflow-webserver:
     <<: *airflow-common

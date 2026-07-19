@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: raw
-    database: TAXI_DB
+    database: TAXI_CONSUMERS
     schema: RAW
     tables:
       - name: trips

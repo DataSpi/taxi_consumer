@@ -20,27 +20,33 @@ models:
   - name: fct_trips
     description: One row per taxi trip (incremental, appended by month).
     columns:
+      # Deliberately flat `to`/`field` (not nested under `arguments:`, which
+      # dbt >=1.10 recommends) -- Cosmos's LoadMode.CUSTOM parser doesn't
+      # detect ref() calls nested under `arguments:` in test configs, so
+      # nesting silently drops the dim_zone/dim_date dependency edge and lets
+      # fct_trips.test race ahead of dim_zone.run. Confirmed by hitting it:
+      # a SQL compilation error ("DIM_ZONE does not exist") because the test
+      # ran before the table was built. Flat syntax just prints a soft
+      # deprecation warning from dbt; that's a smaller cost than wrong
+      # task ordering.
       - name: pickup_location_id
         tests:
           - not_null
           - relationships:
-              arguments:
-                to: ref('dim_zone')
-                field: location_id
+              to: ref('dim_zone')
+              field: location_id
       - name: dropoff_location_id
         tests:
           - not_null
           - relationships:
-              arguments:
-                to: ref('dim_zone')
-                field: location_id
+              to: ref('dim_zone')
+              field: location_id
       - name: pickup_date
         tests:
           - not_null
           - relationships:
-              arguments:
-                to: ref('dim_date')
-                field: date_day
+              to: ref('dim_date')
+              field: date_day
 
   - name: fct_trips_daily_summary
     description: Trip counts/revenue aggregated by pickup date + zone, for the dashboard.

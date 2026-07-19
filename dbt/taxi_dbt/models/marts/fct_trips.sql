@@ -1,14 +1,18 @@
 {{
     config(
         materialized='incremental',
-        incremental_strategy='append'
+        incremental_strategy='delete+insert',
+        unique_key=['pickup_year', 'pickup_month']
     )
 }}
 
--- Append-only, high-water-mark incremental: each Airflow run loads exactly one
--- new month into raw.trips, so on every dbt run we only need rows newer than
--- whatever's already in this table. Matches the pipeline's month-by-month
--- backfill design (see CLAUDE.md) rather than a single full-refresh load.
+-- High-water-mark incremental (only pull rows newer than what's already
+-- here), but delete+insert by (pickup_year, pickup_month) rather than plain
+-- append: makes replaying/backfilling a given month idempotent -- rerunning
+-- for a month whose data hasn't advanced past the existing watermark is a
+-- safe no-op instead of duplicating rows. (Plain 'append' silently doubled
+-- rows the first time this pipeline's Snowflake load task got rerun for an
+-- already-loaded month -- see docs/errors_and_fixes.md.)
 
 select
     vendor_id,
