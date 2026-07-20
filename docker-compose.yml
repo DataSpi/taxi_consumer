@@ -105,6 +105,19 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
+  streamlit:
+    build:
+      context: ./dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      # Reuses the same Snowflake connection blob Airflow/Cosmos use --
+      # one credential source, not a separate copy for the dashboard.
+      AIRFLOW_CONN_SNOWFLAKE_DEFAULT: ${AIRFLOW_CONN_SNOWFLAKE_DEFAULT}
+    volumes:
+      - ./dashboard/app.py:/app/app.py
+    restart: unless-stopped
+
 volumes:
   postgres-db-volume:
   minio-data:

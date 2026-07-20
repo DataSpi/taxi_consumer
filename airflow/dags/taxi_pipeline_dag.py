@@ -95,7 +95,7 @@ def taxi_pipeline():
         response.raise_for_status()
         hook.load_bytes(response.content, key=key, bucket_name=RAW_BUCKET, replace=True)
         return key
-
+          
     @task
     def extract_zone_lookup() -> str:
         """Land the static zone dimension once; skip if already present."""

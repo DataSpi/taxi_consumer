@@ -2,7 +2,7 @@
 
 End-to-end batch analytics engineering pipeline on NYC TLC Yellow Taxi trip data — built to demonstrate Airflow, Docker, PySpark, Snowflake, and dbt working together.
 
-> Status: Weeks 1-2 done (extract + PySpark clean, verified end-to-end for 2024). See [CLAUDE.md](./CLAUDE.md) for full architecture, decisions, and roadmap.
+> Status: Weeks 1-4 done — full pipeline (extract → Spark clean → Snowflake load → dbt marts) verified end-to-end through Airflow for 2024, plus a live Streamlit dashboard on top of the marts. See [CLAUDE.md](./CLAUDE.md) for full architecture, decisions, and roadmap.
 
 ## Architecture
 
@@ -80,10 +80,29 @@ Credentials for both the Airflow task and the Spark job come from the same `mini
 
 Verified end-to-end through Airflow itself (not just a manual run): triggering `taxi_pipeline` for Feb 2024 ran all 3 tasks to `success` and produced `processed/trips/year=2024/month=02/` with 11 partitioned Parquet files.
 
-### Not built yet (upcoming weeks — see [CLAUDE.md](./CLAUDE.md))
+## Week 3: Snowflake + dbt
 
-- Week 3: Snowflake internal-stage load + dbt project (staging/intermediate/incremental marts), wired into this same DAG.
-- Week 4: Streamlit dashboard, GitHub Actions CI, architecture diagram, case study.
+Two more tasks land the cleaned month in Snowflake and build the star schema on top of it: `load_zone_lookup_to_snowflake`/`load_to_snowflake` (`PUT` the processed Parquet to an internal named stage, then `COPY INTO` `TAXI_CONSUMERS.RAW`, deleting the target partition first so reruns replace rather than duplicate), followed by a Cosmos `DbtTaskGroup` that runs the full `dbt/taxi_dbt` project (`stg_trips`/`stg_zones` → `dim_date`/`dim_zone`/`fct_trips`/`fct_trips_daily_summary`, each with schema + singular tests) against `TAXI_CONSUMERS.ANALYTICS`.
+
+`fct_trips` is dbt `incremental` (`delete+insert` by `pickup_year`/`pickup_month`), matched to the DAG's monthly schedule — the whole pipeline backfills/replays one month at a time rather than a single full-refresh dump. Cosmos derives dbt's `profiles.yml` from the same `snowflake_default` Airflow Connection the Python tasks use, so there's one credential source for the whole DAG.
+
+Verified end-to-end for full-year 2024 backfill: `taxi_pipeline` completed all 17 tasks per run (extract → Spark clean → Snowflake load → 12 Cosmos `dbt_build.*` run/test tasks), landing `FCT_TRIPS` at 2,723,733 rows, `DIM_ZONE` at 265, `DIM_DATE` at 366, `FCT_TRIPS_DAILY_SUMMARY` at 6,662 — all dbt tests passing. 14 real bugs hit and fixed along the way are logged in `docs/errors_and_fixes.md`; design decisions that generalize beyond this project are in `docs/best_practices.md`.
+
+## Week 4: Streamlit dashboard
+
+`dashboard/app.py` reads straight from the `TAXI_CONSUMERS.ANALYTICS` marts (`fct_trips_daily_summary` joined to `dim_zone`/`dim_date`) via `snowflake-connector-python`, reusing the same `AIRFLOW_CONN_SNOWFLAKE_DEFAULT` credential blob the pipeline already uses — no separate copy of the Snowflake password for the dashboard. It's its own service in `docker-compose.yml`.
+
+Filters (date range, borough) drive four views: a daily trip-count trend, revenue by borough, the top 10 pickup zones, and a weekday-vs-weekend comparison, plus KPI tiles (total trips, revenue, avg fare, avg trip distance) and a raw-data expander.
+
+```bash
+docker compose up -d streamlit
+```
+
+- **Dashboard**: http://localhost:8501
+
+### Not built yet (see [CLAUDE.md](./CLAUDE.md))
+
+- GitHub Actions CI, architecture diagram image, demo recording (capture before the Snowflake trial expires).
 
 ## What I learned
 
